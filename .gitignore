@@ -1,14 +1,9 @@
-# Binaries for programs and plugins
-*.exe
-*.exe~
-*.dll
-*.so
-*.dylib
-*.log
+.vscode/
+.idea/
+.env
+auth_srv.*
+__debug_bin
+go.sum
 
-# Test binary, build with `go test -c`
-*.test
 
-# Output of the go coverage tool, specifically when used with LiteIDE
-*.out
-debug
+auth_srv
