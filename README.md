@@ -25,11 +25,11 @@
 
 ## 二、业务实践
 
-    以最简单的文件管理业务为例，实现两个接口：1.添加文件，2.获取文件。
+以最简单的文件管理业务为例，实现两个接口：1.添加文件，2.获取文件。
 
-　　1.presentation 表现层。主要和不同的Web框架有一定的耦合，不同的框架代码不全一样。但核心功能是相同的，就是进行HTTP请求和应用层的视图模型的双向转换，并且处理HTTP的状态等。
+1.presentation 表现层。主要和不同的Web框架有一定的耦合，不同的框架代码不全一样。但核心功能是相同的，就是进行HTTP请求和应用层的视图模型的双向转换，并且处理HTTP的状态等。
 
-    ```golang
+```golang
     //获取到文件的基本信息，和保存路径，并返回给请求方
     func GetFile(c *gin.Context) {
         rst, has, err := application.GetFileById(c.Param("id"))
@@ -64,11 +64,11 @@
         }
         c.JSON(http.StatusOK, fileId)
     }
-    ```
+```
 
-　　2.application应用层。通用的日志、打点等。通过直接持有领域层的聚合根，仓储层等直接进行业务表达。并将不常变化的领域模型，转换为可能经常变化的视图模型。
+2.application应用层。通用的日志、打点等。通过直接持有领域层的聚合根，仓储层等直接进行业务表达。并将不常变化的领域模型，转换为可能经常变化的视图模型。
 
-    ```go
+```go
     //从数据库获取文件的基本信息，不涉及到
     func GetFileById(id string) (file FileInfo, has bool, err error) {
         obj, has, err := infrastructure.RepoFac.FilesRepo.GetById(id)
@@ -121,10 +121,11 @@
         UpFile *multipart.FileHeader `form:"up_file"`
         Remark string                `form:"remark"`
     }
-    ```
+```
 
-　　3. domain领域层。负责表达业务概念，业务状态信息以及业务规则。尽管保存业务状态的技术细节由基础设施层提供，但反应业务情况的状态是由本层控制并使用的。 领域驱动设计里最核心的部分了，可以细拆分为聚合根、实体，领域服务等一大堆其他概念。这里不展开详细说明了，简单的理解下 聚合根，负责整个聚合业务的所有功能就行了。比如项目中的filesAggregate，该类直接负责文件管理相关的所有操作业务，对内依赖调用领域服务、相关实体等，或封装一些不对外的方法、函数，完成所有所需的功能，由聚合根对外统一提供方法。可以把之前MVP里面的Presenter的主要代码需要完成的功能转移过来，再按照领贫血模型来分离出领域服务+实体+值对象等。
-    ```go
+3. domain领域层。负责表达业务概念，业务状态信息以及业务规则。尽管保存业务状态的技术细节由基础设施层提供，但反应业务情况的状态是由本层控制并使用的。 领域驱动设计里最核心的部分了，可以细拆分为聚合根、实体，领域服务等一大堆其他概念。这里不展开详细说明了，简单的理解下 聚合根，负责整个聚合业务的所有功能就行了。比如项目中的filesAggregate，该类直接负责文件管理相关的所有操作业务，对内依赖调用领域服务、相关实体等，或封装一些不对外的方法、函数，完成所有所需的功能，由聚合根对外统一提供方法。可以把之前MVP里面的Presenter的主要代码需要完成的功能转移过来，再按照领贫血模型来分离出领域服务+实体+值对象等。
+
+```go
     //聚合根作为该领域上下文唯一对外开放的出入口
     //聚合根持有相关的实体，指挥实体完成任务
     func (a *filesAggregate) AddNewFile(fileInfo FileInfos) (fileId string, err error) {
@@ -148,13 +149,13 @@
         _, err = fileRepos.AddObj(en.FileInfo)
         return
     }
-    ```
+```
 
-　　4. infrastructure基础设施层。为上面各层提供通用的技术能力：为应用层传递消息，为领域层提供持久化机制，为表现层绘制屏幕组件，等等。 这一层也是讲求和业务逻辑无关，只重点提供通用的功能。未来最主要需要编码的部分是仓储功能，和数据库打交道的这部分逻辑了，其他的基本都是基础功能或帮助类，变更的概率不大。
+4. infrastructure基础设施层。为上面各层提供通用的技术能力：为应用层传递消息，为领域层提供持久化机制，为表现层绘制屏幕组件，等等。 这一层也是讲求和业务逻辑无关，只重点提供通用的功能。未来最主要需要编码的部分是仓储功能，和数据库打交道的这部分逻辑了，其他的基本都是基础功能或帮助类，变更的概率不大。
 仓储层标准实践，也尽可能的做到与具体业务无关，单纯的（增删改查）数据库持久化等功能。
 本项目里fileRepo实现对文件管理数据持久化的一些CRUD通用业务代码。
 
-    ```go
+```go
     //新增，
     func (r *fileRepo) AddObj(obj *interfaces.FileInfo) (num int64, err error) {
         now := time.Now().Unix()
@@ -181,17 +182,18 @@
             Find(&objs)
         return
     }
-    ```
-    领域服务 再我自己的项目实践中，领域服务主要用来完成本服务与其他服务之间的数据交流，比如调用其他HTTP接口、RPC请求等。
+```
 
-　　5.crossutting、interfaces这些都不是DDD经典分层里的，主要是用来方便实现DDD所增加和分离出来的一些接口、和基础概念实现。interfaces层 这一层，在标准的分层里其实没有的。这里主要将仓储功能与领域层进一步解耦，利用依赖注入的方式来反转。该层主要定义ORM实体类，也就是数据库表结构的映射，再将持久化的功能抽象成接口的定义。具体的实现，可以有多种，这样持久化的方式可以是彼此无依赖。
+领域服务 再我自己的项目实践中，领域服务主要用来完成本服务与其他服务之间的数据交流，比如调用其他HTTP接口、RPC请求等。
+
+5.crossutting、interfaces这些都不是DDD经典分层里的，主要是用来方便实现DDD所增加和分离出来的一些接口、和基础概念实现。interfaces层 这一层，在标准的分层里其实没有的。这里主要将仓储功能与领域层进一步解耦，利用依赖注入的方式来反转。该层主要定义ORM实体类，也就是数据库表结构的映射，再将持久化的功能抽象成接口的定义。具体的实现，可以有多种，这样持久化的方式可以是彼此无依赖。
   
-    以上即为采用经典四层来实践领域驱动设计最简单的方式，DDD的六边形分层，理解了经典分层，也很容易实践的。
+以上即为采用经典四层来实践领域驱动设计最简单的方式，DDD的六边形分层，理解了经典分层，也很容易实践的。
 
 ## 三、进阶之CQRS+ES
 
 ![CQRS](./asset/02.png)
-　　命令查询职责分离，是由Betrand Meyer（Eiffel语言之父，OCP提出者）提出来的。命令(Command):不返回任何结果(void)，但会改变对象的状态。查询(Query):返回结果，但是不会改变对象的状态，对系统没有副作用。在我的实践过程中，其实还是让命令返回了一些主键之类的。项目采用了 github.com/looplab/eventhorizon 库作为具体的实现，并进行了二次封装，在应用层和表现层，几乎不用写太多代码了。由CQRS的概念可知，系统很方便对数据库进行读写分离。
+命令查询职责分离，是由Betrand Meyer（Eiffel语言之父，OCP提出者）提出来的。命令(Command):不返回任何结果(void)，但会改变对象的状态。查询(Query):返回结果，但是不会改变对象的状态，对系统没有副作用。在我的实践过程中，其实还是让命令返回了一些主键之类的。项目采用了 github.com/looplab/eventhorizon 库作为具体的实现，并进行了二次封装，在应用层和表现层，几乎不用写太多代码了。由CQRS的概念可知，系统很方便对数据库进行读写分离。
 
 ES事件溯源：在CQRS中，每一个确定的命令操作，不论成功还是失败，只要执行之后就产生相应的事件（Event）。这样只需要把所有系统运行的Event，以及其产生时的数据记录起来，这就是系统的历史记录了，并且能够方便的回滚到某一历史状态。Event Sourcing就是用来进行存储和管理事件的。
 
@@ -200,7 +202,7 @@ ES事件溯源：在CQRS中，每一个确定的命令操作，不论成功还�
 
 1.首先抽象Command。诚如项目中domain/files/commands.go 里面AddFileCmd 所示，①实现eh.Command接口即可，这里的AggregateID需要特别留意，此处的ID代表的是执行该命令的聚合根,可以留空；②实现infrastructure/ddd/ddd.Validator接口，对参数有效性进行校验。③eh.RegisterCommand向eventhorizon里注册该命令。
 
-    ```go
+```go
     func init() {
         eh.RegisterCommand(func() eh.Command { return &AddFileCmd{} })
     }
@@ -223,11 +225,11 @@ ES事件溯源：在CQRS中，每一个确定的命令操作，不论成功还�
     func (c *AddFileCmd) CommandType() eh.CommandType     { return AddFileCmdType }
     func (c *AddFileCmd) AggregateType() eh.AggregateType { return "" }
     func (c *AddFileCmd) Verify() error                   { return nil }
-    ```
+```
 
 2.命令抽象出来之后，可以串一下表现层/应用层对该命令的消费。先看直接消费者，应用层。比较宽泛的封装在infrastructure/ddd/app_common.go，将表现层接受来的请求主体，根据命令Key转换为命令，并且进行参数校验、再进行命令总线进行发布。只需要在const里做好cmdtype和表现层cmdkey的转换即可。 具体业务代码见：application/files_app.go  AddFileCommand函数。 表现层，再消费应用层，并尽量做到对领域层的无感知。采用了CQRS对于Command型只需要返回HTTP请求结果即可。
 
-    ```go
+```go
     func AddFileCommand(parm AddFileForm) (err error) {
         //looplab框架根据命令类型，创建命令实例
         cmd, err := eh.CreateCommand(files.AddFileCmdType)
@@ -249,10 +251,11 @@ ES事件溯源：在CQRS中，每一个确定的命令操作，不论成功还�
         }
         return
     }
-    ```
+```
+
 3.命令的Handler，一般都有相关领域上下文的聚合根来承担。聚合根实现 eh.Aggregate接口即可，HandleCommand方法实现方式也基本类似的。具体业务代码的实现，见代码注释不做赘述。遵循面向对象的几大基本原则即可，单一职责（可以多一些实体类）、开放封闭。这样代码变更，或者与他人协作，也只改动单一的源代码文件。 领域层会直接消费基础设施层，一些常用的帮助工具代码先忽略，主要关注即infrastructure/repoFac.go的RepoFac能提供哪些持久化能力即可。
 
-    ```go
+```go
     //Command异步执行，不需要返回值的
     //识别是哪个CMD的请求，并取出相关数据，转交Entity进行业务表达。
     func (a *filesAggregate) HandleCommand(ctx context.Context, cmd eh.Command) (err error) {
@@ -274,6 +277,6 @@ ES事件溯源：在CQRS中，每一个确定的命令操作，不论成功还�
         }
         return
     }
-    ```
+```
 
 以上即为CQRS模式下处理CMD的一般步骤和实践，具体某个业务发生之后，即可激活领域事件，将所有的事件依次持久化下来，便能够进行事件溯源（ES），暂时不深入讨论，先实践最基本的微服务拆解和实际入手代码编写。
